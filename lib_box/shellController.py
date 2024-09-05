@@ -48,8 +48,8 @@ class Shell:
 
     def signin(self):
         email = input("...[INPUT] Email: ")
-        password = getpass.getpass("...[INPUT] Password:")
-        res = signin(email, password)       
+        password = getpass.getpass("...[INPUT] Password: ")
+        res = signin(email, password)
         if res['status']:
             self.id_token = res['id_token']
             self.email = res['email']
