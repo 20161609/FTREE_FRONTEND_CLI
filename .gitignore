@@ -1,0 +1,8 @@
+# Ignore service account key file
+serviceAccountKey.json
+
+# Ignore environment variables file
+.env
+
+# Python Virtual Env
+venv
