@@ -2,3 +2,15 @@
 requests
 python-dotenv
 firebase_admin
+
+# Virtual Environment
+python -m venv venv
+
+# 가상 환경 생성 (Python 3.x)
+python -m venv venv
+
+# 가상 환경 활성화 (Windows)
+./venv/Scripts/activate
+
+# 실행
+python main.py
