@@ -47,6 +47,9 @@ class Shell:
         self.renew_prompt()
 
     def signin(self):
+        if self.id_token != None:
+            print("...[ERROR] You are already logged in.")
+            return
         email = input("...[INPUT] Email: ")
         password = getpass.getpass("...[INPUT] Password: ")
         res = signin(email, password)
