@@ -70,7 +70,8 @@ def make_children_list(tree, branch):
         children_list.sort()
         print("...[INFO] child branches from the current branch")
         for i, child in enumerate(children_list):
-            print(f"{i+1}. {child}")
+            if len(child) > 8:
+                print(f"{i+1}. {child[8::]}")
     else:
         print("...[INFO] No children branch")
     return
@@ -87,7 +88,7 @@ def path_validity(tree, path):
                 return None
             node_name = list(node['Children'].keys())[index-1]
 
-        if node_name not in node['Children']:
+        if node_name not in [s[8::] for s in node['Children']]:
             # Invalid Path: No such branch
             return None
         absolute_path += '/' + node_name

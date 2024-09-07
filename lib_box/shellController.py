@@ -16,7 +16,16 @@ class Shell:
         self.renew_prompt()
 
     def renew_prompt(self):
-        self.prompt = f'\n[{self.mode}] ~ {self.email} #{self.branch}/\n$ '
+        if self.email == None:
+            email = 'Guest'
+        else:
+            email = self.email
+
+        if self.branch != None:
+            branch = self.branch[8::]
+        else:
+            branch = 'None'
+        self.prompt = f'\n[{self.mode}] ~ {email} #{branch}/\n$ '
 
     def fetch(self, command):
         try:
