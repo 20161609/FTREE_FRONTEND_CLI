@@ -1,7 +1,7 @@
 # pip install
-requests
-python-dotenv
-firebase_admin
+pip install requests
+pip install python-dotenv
+pip install firebase_admin
 
 # Virtual Environment
 python -m venv venv
