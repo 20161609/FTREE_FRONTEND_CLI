@@ -1,3 +1,4 @@
+from collections import deque
 import requests
 import os
 from dotenv import load_dotenv
@@ -40,17 +41,16 @@ def update_tree(id_token, branch, new_branch):
         # Check the response status
         if response.status_code == 200:
             if response_data['status'] == True:
-                print(response_data['message'])
+                print("...[SUCCESS] Branch created")
                 return True
             else:
-                print(response_data['message'])
+                print("...[ERROR] Branch creation failed\n",response_data['message'])
                 return False
         else:
-            print(response)
-            print(response_data['message'], 2)
+            print("...[ERROR] Fault..\n", response_data['message'])
             return False
     except Exception as e:
-        print(e, 3)
+        print("...[ERROR] Unexpected->", e)
         return False
     
 # Show the children list of the current branch
@@ -59,7 +59,16 @@ def make_children_list(tree, branch):
     try:
         node = tree
         for node_name in branch.split('/')[1::]:
-            node = node['Children'][node_name]
+            IS_VALID = False
+            for s in node['Children']:
+                if node_name == s[8::]:
+                    node = node['Children'][s]
+                    IS_VALID = True
+                    break
+                
+            if not IS_VALID:
+                print('...[ERROR] No such branch')
+                return
     except Exception as e:
         print(f"...[ERROR] {e}")
         return
@@ -77,7 +86,7 @@ def make_children_list(tree, branch):
     return
 
 # Check the validity of the path and Return absolute path to use in firebase
-def path_validity(tree, path):
+def get_absolute_path(tree, path):
     absolute_path = 'Home'
     node = tree
     for node_name in path.strip().split('/')[1::]:
@@ -85,12 +94,52 @@ def path_validity(tree, path):
             index = int(node_name)
             if index > len(node['Children']) or index < 1:
                 # Invalid Path: Index out of range
+                print('...[ERROR] Index out of range')
                 return None
-            node_name = list(node['Children'].keys())[index-1]
+            node_name = list(node['Children'].keys())[index-1][8::]
 
-        if node_name not in [s[8::] for s in node['Children']]:
+        IS_VALID = False
+        for s in node['Children']:
+            if node_name == s[8::]:
+                absolute_path += '/' + node_name
+                node = node['Children'][s]
+                IS_VALID = True
+                break
+        if not IS_VALID:
             # Invalid Path: No such branch
-            return None
-        absolute_path += '/' + node_name
-        node = node['Children'][node_name]
+            return
+        
     return absolute_path
+
+# Get the firebase path from the tree and the path
+def get_firebase_path(tree, path):
+    firebase_path = '00000000Home'
+    node = tree
+    for node_name in path.strip().split('/')[1::]:
+        print("BLOCK", node_name)
+        IS_VALID = False
+        for s in node['Children']:
+            if node_name == s[8::]:
+                firebase_path += '/' + s
+                node = node['Children'][s]
+                IS_VALID = True
+                break
+        if not IS_VALID:
+            return None  
+    return firebase_path
+
+# Get the path list from the tree
+def get_path_list(node, path='Home'):
+    path_list = []
+    box = [path, node]
+    queue = deque([box])
+
+    while queue:
+        path, node = queue.pop()
+        if node['Children'] != "None":
+            for child in list(node['Children'])[::-1]:
+                new_path = path + '/' + child[8::]
+                new_node = node['Children'][child]
+                queue.append([new_path, new_node])
+        path_list.append(path)
+    return path_list

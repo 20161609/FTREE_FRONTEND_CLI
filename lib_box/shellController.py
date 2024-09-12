@@ -1,8 +1,9 @@
 import getpass
 import tkinter as tk
+from transaction.upload_window import TransactionUploader
 from firebase.auth import signin, signup, send_vefication_email
-from firebase.tree import get_tree, update_tree, make_children_list, path_validity
-from transaction.transaction import add_transaction, upload_image, upload_transaction
+from firebase.tree import get_tree, update_tree, make_children_list, get_absolute_path, get_path_list
+from firebase.tree import get_firebase_path
 
 class Shell:
     def __init__(self):
@@ -23,7 +24,7 @@ class Shell:
             email = self.email
 
         if self.branch != None:
-            branch = self.branch[8::]
+            branch = self.branch[::]
         else:
             branch = 'None'
         self.prompt = f'\n[{self.mode}] ~ {email} #{branch}/\n$ '
@@ -42,15 +43,22 @@ class Shell:
                     self.user_info()
                 elif list_cmd[0] == 'mode':
                     self.modify_mode()
-                elif list_cmd[0] in ['list', 'ls']:
-                    self.list_children()
                 elif list_cmd[0] == 'test':
                     self.test()
+                elif list_cmd[0] in ['insert', 'in']:
+                    self.insert()
             elif len(list_cmd) == 2: # 2 words command
                 if list_cmd[0] == 'mkdir':
                     self.mkdir(list_cmd[1])
                 elif list_cmd[0] in ['cd', 'chdir']:
                     self.chdir(list_cmd[1])
+                elif list_cmd[0] in ['list', 'ls']:
+                    if list_cmd[1] in ['-dir', '-directory']:
+                        self.list_children()
+                    elif list_cmd[1] in ['-cf', '-cashflow']:
+                        self.list_cashflow()
+                        pass
+
         except Exception as e:
             error_message = f'on fetch,\n{e}'
             print('...[ERROR]:', error_message)
@@ -139,10 +147,9 @@ class Shell:
         elif self.mode == "Viewer":
             print("...[ERROR] You are not in the Editor mode.")
         elif self.mode == "Editor":
-            print("Begin: new Branch")
-            update_tree(self.id_token, self.branch, new_branch)
+            firebase_path = get_firebase_path(self.tree, self.branch)
+            update_tree(self.id_token, firebase_path, new_branch)
             self.tree = get_tree(self.id_token)
-            print("End: new Branch")
         return
 
     def list_children(self):
@@ -166,12 +173,54 @@ class Shell:
         base_path = '/'.join(self.branch.split('/')[:base_path_depth:])
         base_path += ''.join([f'/{node}' for node in branch.split('/')[back_motion_count:]])
         base_path = base_path[:-1] if base_path[-1] == '/' else base_path
-        path = path_validity(tree=self.tree, path=base_path)
+        path = get_absolute_path(tree=self.tree, path=base_path)
+
         if path:
             self.branch = path
         else:
             print("...[ERROR] Invalid path")
 
+    def insert(self):
+        if not self.id_token:
+            print("...[ERROR] You are not logged in.")
+            return
+        if self.mode == "Viewer":
+            print("...[ERROR] You are not in the Editor mode.")
+            return
+        
+        path_list = get_path_list(self.tree, self.branch)
+        TransactionUploader(
+            branch_options=path_list, 
+            branch_path=self.branch, 
+            id_token=self.id_token
+        )
+
+    def delete(self):
+        pass
+
     def test(self):
         print("...[TEST]")
-        upload_transaction(self.id_token, self.branch)
+        path_list = get_path_list(self.tree, self.branch)
+        TransactionUploader(
+            branch_options=path_list, 
+            branch_path=self.branch, 
+            id_token=self.id_token
+        )
+
+        # upload_transaction(self.id_token, self.branch)
+
+    def list_cashflow(self):
+        print(self.branch)
+        d = get_firebase_path(self.tree, self.branch)
+        print(d)
+
+        pass
+
+{
+    'Children': {
+        '00000001manage': {'Children': 'None', 'MaxIndex': 0}, 
+        '00000002event': {'Children': 'None', 'MaxIndex': 0}, 
+        '00000003overhead': {'Children': 'None', 'MaxIndex': 0}
+    },
+    'MaxIndex': 3
+}
