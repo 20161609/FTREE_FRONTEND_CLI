@@ -1,7 +1,7 @@
 from lib_box.shellController import Shell
 from firebase.init import init_firebase_admin
 
-quit_commands = {'q!', 'Q!', 'quit', 'QUIT'}
+quit_commands = {'q!', 'Q!', 'quit', 'QUIT', 'exit', 'EXIT', '\\q'}
 
 def __main__():
     init_firebase_admin()

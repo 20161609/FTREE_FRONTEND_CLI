@@ -2,6 +2,7 @@ import getpass
 import tkinter as tk
 from firebase.auth import signin, signup, send_vefication_email
 from firebase.tree import get_tree, update_tree, make_children_list, path_validity
+from transaction.transaction import add_transaction, upload_image, upload_transaction
 
 class Shell:
     def __init__(self):
@@ -43,6 +44,8 @@ class Shell:
                     self.modify_mode()
                 elif list_cmd[0] in ['list', 'ls']:
                     self.list_children()
+                elif list_cmd[0] == 'test':
+                    self.test()
             elif len(list_cmd) == 2: # 2 words command
                 if list_cmd[0] == 'mkdir':
                     self.mkdir(list_cmd[1])
@@ -168,3 +171,7 @@ class Shell:
             self.branch = path
         else:
             print("...[ERROR] Invalid path")
+
+    def test(self):
+        print("...[TEST]")
+        upload_transaction(self.id_token, self.branch)
