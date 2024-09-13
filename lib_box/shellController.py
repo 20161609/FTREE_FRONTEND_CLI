@@ -5,6 +5,8 @@ from firebase.auth import signin, signup, send_vefication_email
 from firebase.tree import *
 from transaction.transaction import *
 from transaction.delete_window import DeleteTransactionWindow
+from transaction.modify_window import ModifyWindow
+
 # from firebase.tree import get_tree, update_tree, make_children_list, get_absolute_path, get_path_list
 # from firebase.tree import get_firebase_path
 
@@ -52,6 +54,8 @@ class Shell:
                     self.insert()
                 elif list_cmd[0] in ['delete', 'del']:
                     self.delete()
+                elif list_cmd[0] in ['modify', 'mod']:
+                    self.modify()
                 elif list_cmd[0] == 'test':
                     self.test()
             elif len(list_cmd) == 2: # 2 words command
@@ -238,3 +242,14 @@ class Shell:
     def refer_monthly(self):
         firebase_path = get_firebase_path(self.tree, self.branch)
         refer_transaction_monthly(id_token=self.id_token, branch=firebase_path)
+
+    def modify(self):
+        firebase_branch = get_firebase_path(self.tree, self.branch)
+        
+        ModifyWindow(
+            id_token=self.id_token, 
+            tree=self.tree,
+            branch=firebase_branch,
+            branch_options=get_path_list(self.tree, self.branch)
+        )
+        pass

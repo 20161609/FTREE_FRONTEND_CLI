@@ -37,7 +37,8 @@ class TransactionUploader:
             messagebox.showinfo("Fail", str(e))
             self.root.destroy()
 
-    def make_window(self):  # Window's main structure
+    # Window's main structure
+    def make_window(self):
         self.root.title("Photo Upload and Data Entry Example")
         self.root.grid_anchor("center")
 
@@ -103,20 +104,23 @@ class TransactionUploader:
         self.panel.image = panel_image
         self.root.mainloop()
 
-    def upload_photo(self):  # Upload Image
+    # Upload Image
+    def upload_photo(self):
         self.file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.gif")])
         if self.file_path:
             # load Image from local
-            self.img = Image.open(self.file_path)
-            self.img.show()
-
+            img = Image.open(self.file_path)
+            img.show()
+            self.img = img.copy()
+            
             # Create panel image
-            self.img.thumbnail((250, 250))
+            self.img.thumbnail((250, 250)) 
             panel_image = ImageTk.PhotoImage(self.img)
             self.panel.config(image=panel_image)
             self.panel.image = panel_image
 
-    def save_data(self):  # Save Data and Image
+    # Save Data and Image
+    def save_data(self):  
         # Validate the input
         # validation - Date
         _date = format_date(self.date_entry.get().strip())

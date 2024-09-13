@@ -24,6 +24,7 @@ def upload_transaction(
         file = open(file_path, 'rb')
 
     files = {'receipt': file} if file else None
+
     data = {
         't_date': t_date, 'branch': branch, 'cashflow': cashflow,
         'id_token': id_token, 'description': description
@@ -45,6 +46,7 @@ def upload_transaction(
         print(response_data)
         return None
 
+# Refer the daily transaction data and Print
 def refer_transaction_daily(id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
     response = get_transaction_daily(id_token, branch, begin_date, end_date)
 
@@ -107,6 +109,7 @@ def refer_transaction_daily(id_token, branch="00000000Home", begin_date='0001-01
         print(response.json())
         return None
 
+# Refer the monthly transaction data
 def get_transaction_daily(id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
     url = f"{BASIC_URL}/transaction/refer-daily/"
     return requests.get(url, data={
@@ -115,6 +118,7 @@ def get_transaction_daily(id_token, branch="00000000Home", begin_date='0001-01-0
         'begin_date': begin_date, 'end_date': end_date
     })
 
+# Refer the monthly transaction data and Print
 def refer_transaction_monthly(id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
     data = {
         'id_token': id_token, 
@@ -178,6 +182,7 @@ def refer_transaction_monthly(id_token, branch="00000000Home", begin_date='0001-
         print(response_data)
         return None
 
+# Delete the transaction info from PostgreSQL and Firebase
 def delete_transaction(id_token:str, tid:int):
     url = f"{BASIC_URL}/transaction/delete-transaction/"
     response = requests.delete(url, data={'id_token':id_token,'tid': tid})
@@ -195,14 +200,44 @@ def delete_transaction(id_token:str, tid:int):
         print(response_data)
         return None
 
-{'status': True, 
- 'message': [{
-     'tid': 7, 
-     't_date': '2024-01-12', 
-     'branch': '00000000Home/00000001manage/00000001CM_ACTIVITY', 
-     'cashflow': -123049, 
-     'description': 
-     'fmekk', 
-     'receipt': 'sIzCjnPBWrY3aHr9bV5t1OT8TVs1_1726158229_6e6ea4.jpeg', 
-     'c_date': '2024-09-13T01:23:49.488787', 
-     'uid': 'sIzCjnPBWrY3aHr9bV5t1OT8TVs1'}, {'tid': 8, 't_date': '2024-01-14', 'branch': '00000000Home/00000001manage/00000001CM_ACTIVITY', 'cashflow': -4800, 'description': 'knkfle', 'receipt': 'sIzCjnPBWrY3aHr9bV5t1OT8TVs1_1726158258_06aa16.jpeg', 'c_date': '2024-09-13T01:24:18.964483', 'uid': 'sIzCjnPBWrY3aHr9bV5t1OT8TVs1'}, {'tid': 9, 't_date': '2024-01-21', 'branch': '00000000Home/00000001manage/00000001CM_ACTIVITY', 'cashflow': -4090, 'description': 'mlmlwe', 'receipt': 'sIzCjnPBWrY3aHr9bV5t1OT8TVs1_1726158279_6885a2.jpeg', 'c_date': '2024-09-13T01:24:39.686991', 'uid': 'sIzCjnPBWrY3aHr9bV5t1OT8TVs1'}]}
+# Get the receipt image from the server
+def get_receipt_image(id_token:str, file_path: str):
+    url = f"{BASIC_URL}/transaction/get-receipt/"
+    response = requests.get(url, data={'id_token':id_token,'file_path': file_path})
+
+    if response.status_code == 200:
+        if response.json()['status'] == False:
+            print("...[ERROR]", response.json()['message'])
+            return None
+        else:
+            print("...[SUCCESS]", 'Successfully loaded the image')
+            return response.json()
+    else:
+        print("...[ERROR] Upload failed")
+        return None
+
+# Modify the transaction info
+def modify_transaction(id_token:str, tid:str, t_date:str, branch:str, cashflow:int, description:str, receipt=None):
+    # Get Image file indicating receipt
+    files = {'receipt': receipt} if receipt else None
+    data = {
+        'tid': tid, 't_date': t_date, 'branch': branch, 'cashflow': cashflow,
+        'id_token': id_token, 'description': description
+    }
+
+    # Send the transaction data to the server
+    url = f"{BASIC_URL}/transaction/modify-transaction/"
+    response = requests.put(url, data=data, files=files)
+    response_data = response.json()
+
+    # Check the response
+    if response.status_code == 200:
+        if response_data['status'] == False:
+            print("...[ERROR]", response_data['message'])
+        else:
+            print("...[SUCCESS]", response_data['message'])
+    else:
+        print("[ERROR] Upload failed")
+        print(response_data)
+        return None
+
