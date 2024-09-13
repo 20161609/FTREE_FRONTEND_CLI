@@ -4,6 +4,7 @@ from transaction.upload_window import TransactionUploader
 from firebase.auth import signin, signup, send_vefication_email
 from firebase.tree import *
 from transaction.transaction import *
+from transaction.delete_window import DeleteTransactionWindow
 # from firebase.tree import get_tree, update_tree, make_children_list, get_absolute_path, get_path_list
 # from firebase.tree import get_firebase_path
 
@@ -49,6 +50,8 @@ class Shell:
                     self.list_children()
                 elif list_cmd[0] in ['insert', 'in']:
                     self.insert()
+                elif list_cmd[0] in ['delete', 'del']:
+                    self.delete()
                 elif list_cmd[0] == 'test':
                     self.test()
             elif len(list_cmd) == 2: # 2 words command
@@ -199,8 +202,23 @@ class Shell:
             tree=self.tree
         )
 
-    def delete(self):
-        pass
+    def delete(self, begin_date='0001-01-01', end_date='9999-12-31'):
+        if self.id_token == None:
+            print("...[ERROR] You are not sign in.")
+            print("...[INFO] If you want to sign in, please input 'signin'.")
+            return
+        
+        if self.mode == "Viewer":
+            print("...[ERROR] You are not in the Editor mode.")
+            print("...[INFO] If you want to delete the transaction, please input 'mode'.")
+            return
+        
+        DeleteTransactionWindow(query={
+            'branch': get_firebase_path(self.tree, self.branch),
+            'id_token': self.id_token, 
+            'begin_date': begin_date, 
+            'end_date': end_date
+        })
 
     def test(self):
         print("...[TEST]")

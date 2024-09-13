@@ -1,155 +1,153 @@
-# import sqlite3
-# from PIL import Image, ImageTk, ImageDraw, ImageFont
-# from collections import deque
-# import json
-# from tkinterdnd2 import TkinterDnD, DND_FILES
-# from tkinter import filedialog, messagebox, ttk, NW
-# import lib_sanitizer as Df
-# import lib_branch as Br
-# import os
-# import tkinter as tk
-# from tkinter import messagebox
-# import lib_sanitizer as Df
+from tkinter import messagebox
+from transaction.transaction import get_transaction_daily, delete_transaction
+import tkinter as tk
+from tkinter import ttk
+import lib_box.santizer as Df
 
-# class DeleteWindow:
-#     def __init__(self, sync_function, branch_path='Home'):
-#         self.branch_path = branch_path  # 브랜치 경로
-#         self.sync = sync_function  # 동기화 함수
-#         self.root = tk.Tk()  # 메인 윈도우
+class DeleteTransactionWindow:
+    def __init__(self, query):
+        self.branch = query['branch']
+        self.id_token = query['id_token']
+        self.begin_date = query['begin_date']
+        self.end_date = query['end_date']
+        self.field_names = ['T-id', 'When', 'Branch', 'Cash Flow','Description', 'Created']
+        self.rows = []
 
-#         try:
-#             self.main_frame = tk.Frame(self.root)  # 메인 프레임
-#             self.canvas = tk.Canvas(self.main_frame)  # 캔버스
-#             self.table_frame = tk.Frame(self.canvas)  # 테이블 프레임
-#             self.make_window()
-#         except Exception as e:
-#             messagebox.showinfo("Fail", str(e))
-#             self.root.destroy()
+        self.root = tk.Tk()  # Main window
 
-#     def make_window(self):
-#         # 최상단 타이틀 설정
-#         self.root.title("Transaction Table")
-#         title_label = tk.Label(self.root, text=self.branch_path, font=("Arial", 17, "bold"))
-#         title_label.pack(pady=10)
+        try:
+            self.make_window()
+        except Exception as e:
+            messagebox.showinfo("Fail", str(e))
+            self.root.destroy()
 
-#         # 메인 프레임 설정
-#         self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+    def make_window(self):
+        # Set window title and maximize
+        self.root.title("Transaction Table")
+        self.root.state('zoomed')
 
-#         # 캔버스 및 스크롤바 설정
-#         self.canvas.pack(side="left", fill="both", expand=True)
-#         scrollbar = tk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
-#         scrollbar.pack(side="right", fill="y")
-#         self.canvas.configure(yscrollcommand=scrollbar.set)
-#         self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        # Define style
+        style = ttk.Style()
+        style.theme_use('clam')
 
-#         # 마우스 휠 이벤트 바인딩
-#         self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+        # Modernize Table Headers and Treeview
+        style.configure("Treeview.Heading", font=("Arial", 12, "bold"), background="#3B5998", foreground="white")
+        style.configure("Treeview", font=("Arial", 10), rowheight=30)
+        style.configure("TButton", font=("Arial", 12), padding=10)
 
-#         # 테이블 프레임을 캔버스에 추가
-#         self.canvas.create_window((0, 0), window=self.table_frame, anchor="nw")
+        # Main frame
+        main_frame = ttk.Frame(self.root, padding=(20, 20, 20, 20))
+        main_frame.pack(fill="both", expand=True)
 
-#         # 테이블 업데이트
-#         self.update_table()
+        # Title label
+        title_branch_name = '/'.join([b[8:] for b in self.branch.split('/')])
+        title_label = ttk.Label(main_frame, text=title_branch_name, font=("Arial", 20, "bold"))
+        title_label.pack(pady=(0, 20))
 
-#         # 창 크기 설정 및 루프 실행
-#         screen_width = self.root.winfo_screenwidth()
-#         screen_height = self.root.winfo_screenheight()
-#         self.root.geometry(f"{screen_width}x{screen_height}")
-#         self.root.mainloop()
+        # Treeview frame
+        tree_frame = ttk.Frame(main_frame)
+        tree_frame.pack(fill="both", expand=True)
 
-#     def delete_row(self, file_name):
-#         _date, _branch, _cashflow, _description = file_name.split('.')[0].split('_')
-#         _branch = _branch.replace('-', '/')
-#         _cashflow = Df.format_cost(int(_cashflow))
-#         info_txt = f'{_date} {_branch} {_cashflow} {_description}'
-#         floating_message = f"Are you sure you want to delete this row?\n\n{info_txt}"
-#         if messagebox.askyesno("Delete", floating_message):
-#             try:
-#                 os.remove(f'transactions/{file_name}')
-#                 self.sync()
-#                 self.update_table()
-#             except:
-#                 pass
+        # Treeview setup
+        columns = self.field_names[1:]  # Exclude 'T-id'
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show='headings', selectmode='browse')
+        self.tree.pack(side='left', fill='both', expand=True, padx=10, pady=10)
 
-#     def get_transactions(self):
-#         rows, file_names = [], []
-#         balance = 0
-#         total_in, total_out = 0, 0
-#         index = -1
-#         for file_name in os.listdir('transactions'):
-#             try:
-#                 _date, _branch, _cashflow, _description = file_name.split('.')[0].split('_')
-#                 _branch = _branch.replace('-', '/')
+        # Bind the Delete key to the Treeview
+        self.tree.bind('<Delete>', lambda e: self.delete_selected())        
 
-#                 if Br.is_sub_path(main_path=self.branch_path, sub_path=_branch):
-#                     _in = max(int(_cashflow), 0)
-#                     _out = -min(int(_cashflow), 0)
-#                     total_out += _out
-#                     total_in += _in
-#                     balance += int(_cashflow)
-#                     index += 1
-#                     row = [index,
-#                            _date,_branch,
-#                            Df.format_cost(_in), Df.format_cost(_out), Df.format_cost(balance),
-#                            _description
-#                            ]
-#                     rows.append(row)
-#                     file_names.append(file_name)
-#             except:
-#                 pass
+        # Column headers
+        for col in columns:
+            self.tree.heading(col, text=col)
 
-#         rows.append(['', '', '',
-#                      Df.format_cost(total_in),
-#                      Df.format_cost(total_out),
-#                      Df.format_cost(balance),
-#                      ''])
+        # Scrollbar setup
+        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        scrollbar.pack(side='right', fill='y')
+        self.tree.configure(yscrollcommand=scrollbar.set)
 
-#         return rows, file_names
+        # Alternating row colors
+        self.tree.tag_configure('oddrow', background='#F9F9F9')
+        self.tree.tag_configure('evenrow', background='#E9E9E9')
 
-#     def update_table(self):
-#         for widget in self.table_frame.winfo_children():
-#             widget.destroy()
+        # Button frame
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(pady=20)
+        
+        delete_button = ttk.Button(button_frame, text="Delete Selected Transaction", command=self.delete_selected, style="TButton")
+        delete_button.pack(pady=10)
 
-#         headers = ["Date", "Branch", "In", "Out", "Balance", "Description"]# , "Delete"]
-#         for col, header in enumerate(headers):
-#             tk.Label(self.table_frame, text=header, bg="#89abcd", fg="white", font=("Arial", 12, "bold"), padx=10, pady=5).grid(row=0, column=col, sticky="nsew")
+        # Update table
+        self.update_table()
 
-#         rows, file_names = self.get_transactions()
-#         for i, row in enumerate(rows):
-#             for j, val in enumerate(row[1:]):
-#                 font = ("Arial", 9, "normal")
-#                 tk.Label(self.table_frame, text=val, bg="#dfdfdf", padx=10, pady=5, font=font).grid(row=i + 1, column=j, sticky="nsew")
+        # Bind Ctrl + 'C' and Escape to close the window
+        self.root.bind("<Control-c>", lambda e: self.root.destroy())
+        self.root.bind("<Escape>", lambda e: self.root.destroy())
 
-#             if i < len(rows) - 1:
-#                 delete_button = tk.Button(
-#                     self.table_frame,
-#                     text="Delete",
-#                     command=lambda file=file_names[row[0]]: self.delete_row(file),
-#                     bg="red", fg="white")
+        self.root.mainloop()
 
-#                 delete_button.grid(row=i + 1, column=len(row) - 1, padx=5, pady=5)
+    def get_transactions(self):
+        res = get_transaction_daily(
+            id_token=self.id_token, 
+            branch=self.branch, 
+            begin_date=self.begin_date, end_date=self.end_date)
+        
+        if res.status_code == 200:
+            if not res.json()['status']:
+                print("...[ERROR]", res.json()['message'])
+                return None
 
-#     # 스크롤 이벤트 처리 함수
-#     def on_mouse_wheel(self, event):
-#         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            # Retrieve transactions from response
+            history = res.json()['message']
+            if len(history) == 0:
+                print("...[INFO] No Transaction data")
+                return None
 
+            self.rows.clear()
 
-# def get_paths():
-#     with open('BudgetTree2.json', encoding='utf-8') as f:
-#         root = json.load(f)
-#     path_box = []
+            for record in history:
+                tid = record['tid']
+                when = record['t_date']
+                branch = '/'.join([b[8:] for b in record['branch'].split('/')])
+                cashflow = record['cashflow']
+                description = record['description']
+                c_date = record['c_date']
+                
+                row = [tid, when, branch, 
+                       Df.format_cost(cashflow), 
+                       description, c_date]
+                self.rows.append(row)
+        else:
+            print("...[ERROR] Upload failed")
+            return None
 
-#     def dfs(node, path_list):
-#         path_txt = '/'.join(path_list)
-#         if len(path_txt) > 0:
-#             path_box.append(path_txt)
-#         for child_name in node:
-#             path_list.append(child_name)
-#             dfs(node[child_name], path_list)
-#             path_list.pop()
+    def update_table(self):
+        # Clear existing data
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
-#     dfs(root, deque([]))
-#     return path_box
+        # Fetch transactions
+        self.get_transactions()
 
-# def delete_transaction(sync, branch):
-#     TransactionController(sync, branch)
+        for idx, row in enumerate(self.rows):
+            tags = (row[0], 'evenrow' if idx % 2 == 0 else 'oddrow')
+            self.tree.insert("", "end", values=row[1:], tags=tags)
+
+    def delete_selected(self):
+        selected_item = self.tree.selection()
+        if selected_item:
+            tid = self.tree.item(selected_item, 'tags')[0]
+
+            # Confirm deletion
+            confirm = messagebox.askyesno("Confirmation", "Are you sure you want to delete the selected transaction?")
+            
+            if confirm:
+                try:
+                    # Implement deletion logic here
+                    a = delete_transaction(id_token=self.id_token, tid=int(tid))
+                    self.tree.delete(selected_item)
+                    print(a)
+                    messagebox.showinfo("Success", "Transaction deleted successfully.")                    
+                except Exception as e:
+                    messagebox.showinfo("Fail", str(e))
+        else:
+            messagebox.showwarning("No Selection", "Please select a transaction to delete.")

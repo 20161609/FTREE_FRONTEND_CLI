@@ -45,26 +45,19 @@ def upload_transaction(
         print(response_data)
         return None
 
-def refer_transaction_daily( id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
-    data = {
-        'id_token': id_token, 
-        'branch': branch,
-        'begin_date': begin_date, 'end_date': end_date
-    }
-    url = f"{BASIC_URL}/transaction/refer-daily/"
-    response = requests.get(url, data=data)
-    response_data = response.json()
+def refer_transaction_daily(id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
+    response = get_transaction_daily(id_token, branch, begin_date, end_date)
 
     if response.status_code == 200:
-        if response_data['status'] == False:
-            print("...[ERROR]", response_data['message'])
+        if response.json()['status'] == False:
+            print("...[ERROR]", response.json()['message'])
             return None
         else:
             # Get Transaction from the response
-            history = response_data['message']
+            history = response.json()['message']
             if len(history) == 0:  # No data
                 print("...[INFO] No Transaction data")
-                return response_data
+                return response.json()
 
             # Print the Transaction data
             print("...[SUCCESS]", "Successfully referred")            
@@ -108,11 +101,19 @@ def refer_transaction_daily( id_token, branch="00000000Home", begin_date='0001-0
             print()
             
                 
-            return response_data
+            return response.json()
     else:
         print("...[ERROR] Upload failed")
-        print(response_data)
+        print(response.json())
         return None
+
+def get_transaction_daily(id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
+    url = f"{BASIC_URL}/transaction/refer-daily/"
+    return requests.get(url, data={
+        'id_token': id_token, 
+        'branch': branch,
+        'begin_date': begin_date, 'end_date': end_date
+    })
 
 def refer_transaction_monthly(id_token, branch="00000000Home", begin_date='0001-01-01', end_date='9999-12-31'):
     data = {
@@ -171,6 +172,23 @@ def refer_transaction_monthly(id_token, branch="00000000Home", begin_date='0001-
             print()
             
                 
+            return response_data
+    else:
+        print("...[ERROR] Upload failed")
+        print(response_data)
+        return None
+
+def delete_transaction(id_token:str, tid:int):
+    url = f"{BASIC_URL}/transaction/delete-transaction/"
+    response = requests.delete(url, data={'id_token':id_token,'tid': tid})
+    response_data = response.json()
+    
+    if response.status_code == 200:
+        if response_data['status'] == False:
+            print("...[ERROR]", response_data['message'])
+            return None
+        else:
+            print("...[SUCCESS]", response_data['message'])
             return response_data
     else:
         print("...[ERROR] Upload failed")
