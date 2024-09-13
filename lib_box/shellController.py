@@ -2,8 +2,10 @@ import getpass
 import tkinter as tk
 from transaction.upload_window import TransactionUploader
 from firebase.auth import signin, signup, send_vefication_email
-from firebase.tree import get_tree, update_tree, make_children_list, get_absolute_path, get_path_list
-from firebase.tree import get_firebase_path
+from firebase.tree import *
+from transaction.transaction import *
+# from firebase.tree import get_tree, update_tree, make_children_list, get_absolute_path, get_path_list
+# from firebase.tree import get_firebase_path
 
 class Shell:
     def __init__(self):
@@ -43,21 +45,22 @@ class Shell:
                     self.user_info()
                 elif list_cmd[0] == 'mode':
                     self.modify_mode()
-                elif list_cmd[0] == 'test':
-                    self.test()
+                elif list_cmd[0] == 'ls':
+                    self.list_children()
                 elif list_cmd[0] in ['insert', 'in']:
                     self.insert()
+                elif list_cmd[0] == 'test':
+                    self.test()
             elif len(list_cmd) == 2: # 2 words command
                 if list_cmd[0] == 'mkdir':
                     self.mkdir(list_cmd[1])
                 elif list_cmd[0] in ['cd', 'chdir']:
                     self.chdir(list_cmd[1])
-                elif list_cmd[0] in ['list', 'ls']:
-                    if list_cmd[1] in ['-dir', '-directory']:
-                        self.list_children()
-                    elif list_cmd[1] in ['-cf', '-cashflow']:
-                        self.list_cashflow()
-                        pass
+                elif list_cmd[0] in ['rf', 'refer']:
+                    if list_cmd[1] == '-d':
+                        self.refer_daily()
+                    elif list_cmd[1] == '-m':
+                        self.refer_monthly()
 
         except Exception as e:
             error_message = f'on fetch,\n{e}'
@@ -192,7 +195,8 @@ class Shell:
         TransactionUploader(
             branch_options=path_list, 
             branch_path=self.branch, 
-            id_token=self.id_token
+            id_token=self.id_token,
+            tree=self.tree
         )
 
     def delete(self):
@@ -209,18 +213,10 @@ class Shell:
 
         # upload_transaction(self.id_token, self.branch)
 
-    def list_cashflow(self):
-        print(self.branch)
-        d = get_firebase_path(self.tree, self.branch)
-        print(d)
+    def refer_daily(self):
+        firebase_path = get_firebase_path(self.tree, self.branch)
+        refer_transaction_daily(id_token=self.id_token, branch=firebase_path)
 
-        pass
-
-{
-    'Children': {
-        '00000001manage': {'Children': 'None', 'MaxIndex': 0}, 
-        '00000002event': {'Children': 'None', 'MaxIndex': 0}, 
-        '00000003overhead': {'Children': 'None', 'MaxIndex': 0}
-    },
-    'MaxIndex': 3
-}
+    def refer_monthly(self):
+        firebase_path = get_firebase_path(self.tree, self.branch)
+        refer_transaction_monthly(id_token=self.id_token, branch=firebase_path)

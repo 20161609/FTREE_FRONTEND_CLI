@@ -1,13 +1,14 @@
 import tkinter as tk
-from transaction.transaction import upload_transaction
+from transaction.transaction import *
 from lib_box.santizer import *
 from tkinter import filedialog, messagebox
 from tkinter import ttk
+from firebase.tree import get_absolute_path, get_firebase_path
 from PIL import Image, ImageTk
 
 
 class TransactionUploader:
-    def __init__(self, id_token ,branch_path='Home', branch_options = ['Home']):
+    def __init__(self, id_token ,branch_path='Home', branch_options = ['Home'], tree=None):
         # Identity User
         self.id_token = id_token
 
@@ -15,6 +16,7 @@ class TransactionUploader:
         self.root = tk.Tk()
 
         # Branch info
+        self.tree = tree
         self.branch_path = branch_path
         self.branch_options = branch_options
         self.file_path = None
@@ -120,7 +122,7 @@ class TransactionUploader:
         _date = format_date(self.date_entry.get().strip())
 
         # validation - Branch
-        _branch = self.branch_dropdown.get().strip().replace('/', '-')
+        _branch = get_firebase_path(self.tree, self.branch_dropdown.get().strip())
 
         # validation - CashFlow
         try:
